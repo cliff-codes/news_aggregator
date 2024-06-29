@@ -1,37 +1,44 @@
 
-const cheerio = require("cheerio")
-const axios = require("axios")
+const { timeout } = require("puppeteer")
+const puppeteer = require("puppeteer")
+
 
 const newsSites = ["www.myjoyonline.com", "3news.com", "peacefmonline.com", "ghanaweb.com", "www.pulse.com.gh"]
-async function performScraping() {
-    // downloading the target web page
-    // by performing an HTTP GET request in Axios
-    const axiosResponse = await axios.request({
-        method: "GET",
-        url: "https://www.pulse.com.gh/",
-        headers: {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36"
-        }
-    })
 
-    if(axiosResponse.error){
-        console.log("Error: " + axiosResponse.error)
-    }else{
-        console.log(axiosResponse.data)
+const startScrapping = async(site, browser) => {
+  try {
+    const page = await browser.newPage()
+    await page.goto(`https://${site}`, { waitUntil: 'networkidle2', timeout: 120000 })
+    await page.setViewport({width: 1080, height: 1024})
+    
+    if(site === "www.myjoyonline.com"){
+      const element = await page.waitForSelector(".home")
+      if(element) await page.screenshot({path: `screensShots/${site}.png`});
     }
+
+    // const element = await page.waitForSelector(".home")
+     
+    await page.screenshot({path: `screenShots/${site}.png`});
+
+    console.log("scrap successful")
+  } catch (error) {
+    console.log(`Error Scrapping ${site}`, error)
+  }
 }
 
-// Parsing the HTML content using Cheerio
-    // const $ = cheerio.load(axiosResponse.data)
+(async () => {
+  // Launch the browser and open a new blank page
+  const browser = await puppeteer.launch();
+  
+  
+  //lunch a new page for each site
 
-    // newsSites.forEach(async (site) => {
-    //     try {
-    //         const response = await axios.get(`https://${site}`)
-    //         const siteTitle = $(response.data).find("title").text()
+  for (const site of newsSites) {
+    await startScrapping(site, browser)
+  }
+  // await startScrapping("www.google.com", browser);
 
-    //         console.log(`Title of ${site}: ${siteTitle}`)
-    //     } catch (error) {
-    //         console.error(`Error fetching ${site}: ${error.message}`)
-    //     }
-    // })
-performScraping()
+  // console.log(responsePromises)
+
+  await browser.close();
+})();
